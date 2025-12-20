@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+//import { useState } from "react";
 //import { collection, onSnapshot, updateDoc, doc } from "firebase/firestore";
 //import { db } from "../../firebase";
 
 const OrdersManager = () => {
 
-     const [orders, setOrders] = useState([]);
+    // const [orders, setOrders] = useState([]);
 
   /*useEffect(() => {
     const unsub = onSnapshot(collection(db, "orders"), (snap) => {
@@ -24,7 +24,7 @@ const OrdersManager = () => {
       <h1 className="text-xl font-semibold mb-4">Orders</h1>
 
       <div className="space-y-4">
-        {orders.map(order => (
+        {/*orders.map(order => (
           <div key={order.id} className="bg-white p-4 rounded shadow">
             <p className="font-medium">Order #{order.id}</p>
             <p>Status: {order.status}</p>
@@ -36,10 +36,10 @@ const OrdersManager = () => {
               </button>
               <button onClick={() => updateStatus(order.id, "ready")}>
                 Ready
-              </button>*/}
+              </button>
             </div>
           </div>
-        ))}
+        ))*/}
       </div>
     </div>
   )

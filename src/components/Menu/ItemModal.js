@@ -63,7 +63,7 @@ export default function ItemModal({ item, open, onClose }) {
     };
 
     fetchOptions();
-  }, [open, item]);
+  }, [open, item, hasSpice, hasExtras]);
 
   if (!open || !item) return null;
 
