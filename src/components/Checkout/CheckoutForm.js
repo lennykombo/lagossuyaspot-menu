@@ -16,7 +16,7 @@ const CheckoutForm = () => {
     notes: ''
   });
 
-  const handleSubmit = async (e) => {
+ /* const handleSubmit = async (e) => {
     e.preventDefault();
     if (items.length === 0) return alert("Your cart is empty");
     
@@ -37,7 +37,40 @@ const CheckoutForm = () => {
 
       clearCart();
       alert("Order placed successfully!");
-      navigate('/success'); // Create a success page later
+      navigate(`/order/${docRef.orderId}`);
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };*/
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (items.length === 0) return alert("Your cart is empty");
+    
+    setLoading(true);
+
+    try {
+      const orderData = {
+        ...formData,
+        items,
+        totalAmount: total,
+        status: 'pending',
+        createdAt: serverTimestamp(),
+      };
+
+      // 1. Save to Firebase and capture the reference in 'docRef'
+      const docRef = await addDoc(collection(db, "orders"), orderData);
+      console.log("Document written with ID: ", docRef.id);
+
+      // 2. Clear the cart before navigating
+      clearCart();
+      
+      // 3. Navigate using docRef.id
+      navigate(`/order/${docRef.id}`);
+      
     } catch (error) {
       console.error("Error adding document: ", error);
       alert("Something went wrong. Please try again.");
