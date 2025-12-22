@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../components/firebase";
 import LogoLoader from "../common/LogoLoader";
