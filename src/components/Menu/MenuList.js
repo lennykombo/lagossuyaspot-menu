@@ -77,7 +77,7 @@ const MenuList = ({ onLoaded, setActiveCategory }) => {
         );
 
         gsap.to(".shimmer-sweep", {
-          xPercent: 1000, duration: 2.5, repeat: -1, ease: "none", stagger: 0.4, delay: 1
+          xPercent: 1200, duration: 2.5, repeat: -1, ease: "none", stagger: 0.4, delay: 1
         });
       }, menuRef);
       return () => ctx.revert();
@@ -87,7 +87,7 @@ const MenuList = ({ onLoaded, setActiveCategory }) => {
   if (loading) return <LogoLoader />;
 
   return (
-    <div ref={menuRef} className="pb-32 px-4 md:px-8 max-w-7xl mx-auto overflow-x-hidden bg-white">
+    <div ref={menuRef} className="pb-32 px-4 md:px-8 max-w-[1600] mx-auto lg:px-12 overflow-x-hidden bg-white">
       {categories.map((cat) => {
         const itemsInSection = menuItems.filter(item => item.categoryId === cat.id);
         if (itemsInSection.length === 0) return null;
@@ -109,13 +109,13 @@ const MenuList = ({ onLoaded, setActiveCategory }) => {
                     <img src={item.imageUrl} alt={item.name} className="w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover shadow-sm" />
                   </div>
                   
-                  <div className="flex-1 min-w-0 z-10 flex flex-col h-16 md:h-20 justify-between">
+                  <div className="flex-1 min-w-0 z-10 flex flex-col justify-between self-stretch">
                     <div>
                       <div className="flex justify-between items-start gap-2">
-                        <h3 className="text-[13px] md:text-[15px] font-bold text-gray-800 uppercase leading-tight pt-0.5">{item.name}</h3>
+                        <h3 className="text-[13px] md:text-[15px] font-bold text-gray-800 uppercase leading-tight pt-0.5 break-words">{item.name}</h3>
                         <span className="text-[13px] md:text-[15px] font-black text-gray-900 whitespace-nowrap pt-0.5">KSh {item.price}</span>
                       </div>
-                      <p className="text-[11px] text-gray-500 line-clamp-1 md:line-clamp-2 mt-1 font-medium pr-4">{item.description}</p>
+                      <p className="text-[11px] md:text-[12px] text-gray-500 line-clamp-2 mt-2 font-medium pr-4 leading-relaxed">{item.description}</p>
                     </div>
                     <div className="flex justify-end">
                       <button onClick={() => setSelectedItem(item)} className="px-5 py-1 text-[13px] rounded-md bg-yellow-500 text-white font-black shadow-md active:scale-75 transition-transform uppercase">Add</button>

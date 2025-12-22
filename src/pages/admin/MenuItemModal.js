@@ -9,6 +9,7 @@ export default function MenuItemModal({ open, onClose, item }) {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [description, setDescription] = useState(""); 
   const [hasSpiceLevels, setHasSpiceLevels] = useState(false);
   const [extras, setExtras] = useState([]);
   const [selectedExtras, setSelectedExtras] = useState([]);
@@ -92,6 +93,7 @@ const resetForm = () => {
   setName("");
   setPrice("");
   setCategoryId("");
+  setDescription("");
   setHasSpiceLevels(false);
   setSelectedExtras([]);
   setImageFile(null);
@@ -104,6 +106,7 @@ useEffect(() => {
     setName(item.name || "");
     setPrice(item.price || "");
     setCategoryId(item.categoryId || "");
+    setDescription(item.description || "");
     setHasSpiceLevels(!!item.hasSpiceLevels);
     setSelectedExtras(item.extras || []);
     setImagePreview(item.imageUrl || null);
@@ -114,33 +117,6 @@ useEffect(() => {
   }
 }, [item, open]);
 
-
-/*const save = async () => {
-  if (uploading) return;
-
-  try {
-    setUploading(true);
-
-    const imageUrl = await uploadToCloudinary();
-
-    await addDoc(collection(db, "menuItems"), {
-      name,
-      price: Number(price),
-      categoryId,
-      hasSpiceLevels,
-      extras: selectedExtras,
-      imageUrl: imageUrl || null,
-      available: true,
-      createdAt: new Date(),
-    });
-
-    resetForm();  
-    onClose(); // modal closes → no need to re-enable
-  } catch (err) {
-    console.error("Error saving menu item:", err);
-    setUploading(false); // only re-enable on error
-  }
-};*/
 
 const save = async () => {
   if (uploading) return;
@@ -161,6 +137,7 @@ const save = async () => {
         name,
         price: Number(price),
         categoryId,
+        description,
         hasSpiceLevels,
         extras: selectedExtras,
         imageUrl,
@@ -171,6 +148,7 @@ const save = async () => {
         name,
         price: Number(price),
         categoryId,
+        description,
         hasSpiceLevels,
         extras: selectedExtras,
         imageUrl,
@@ -250,6 +228,12 @@ const save = async () => {
           <option key={c.id} value={c.id}>{c.name}</option>
         ))}
       </select>
+      <textarea
+        className="w-full border p-2 rounded mb-2 min-h-[80px]"
+        placeholder="Item description (ingredients, size, etc.)"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+      />
 
       <label className="flex items-center gap-2 mb-2">
         <input
