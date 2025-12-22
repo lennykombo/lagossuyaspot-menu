@@ -43,7 +43,7 @@ const MenuPage = () => {
 
   return (
     <div className="bg-yellow-50 min-h-screen">
-      <div className="max-w-3xl mx-auto px-4 py-4">
+      <div className="max-w-4xl mx-auto px-4 py-4">
         <CategoryTabs activeId={activeCategoryId} onChange={handleTabChange} />
         <MenuList onLoaded={() => setMenuReady(true)} />
       </div>

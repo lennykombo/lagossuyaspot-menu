@@ -15,12 +15,12 @@ export default function CategoryTabs({ activeId, onChange }) {
   }, []);
 
   return (
-     <div className="flex gap-2 overflow-x-auto py-1.5 sticky top-0 bg-yellow-50/95 backdrop-blur-sm z-30 scrollbar-hide border-b border-yellow-100">
+     <div className="flex gap-2 overflow-x-auto py-2.5 sticky top-0 bg-yellow-50/95 backdrop-blur-md z-30 scrollbar-hide border-b border-yellow-100">
       {categories.map((cat) => (
         <button
           key={cat.id}
           onClick={() => onChange(cat)}
-          className={`px-3 py-1 rounded-full border text-xs whitespace-nowrap transition duration-200
+          className={`px-3 py-1 rounded-full border text-sm whitespace-nowrap transition duration-200
             ${activeId === cat.id ? "bg-yellow-400 border-yellow-400 text-black font-bold" : "bg-white text-gray-700"}`}
         >
           {cat.name}
