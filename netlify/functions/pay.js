@@ -9,10 +9,10 @@ exports.handler = async (event) => {
   // 1. CONFIGURATION
   // ---------------------------------------------------------
   
-  // CHECK: If PESAPAL_ENV is 'live', use live. Otherwise, default to Sandbox.
+  // Check if we are in Live mode based on Env Variable
   const isLive = process.env.PESAPAL_ENV === 'live';
   
-  // LIVE URL vs SANDBOX URL
+  // CORRECT LIVE URLS FOR V3
   const baseUrl = isLive 
     ? 'https://pay.pesapal.com/v3' 
     : 'https://cybqa.pesapal.com/pesapalv3';
@@ -30,26 +30,42 @@ exports.handler = async (event) => {
     : `${origin}/.netlify/functions/ipn`;
 
   try {
-    console.log(`--- MODE: ${isLive ? 'LIVE (Real Money)' : 'SANDBOX (Testing)'} ---`);
+    console.log(`--- MODE: ${isLive ? 'LIVE' : 'SANDBOX'} ---`);
+    console.log(`--- URL: ${baseUrl} ---`);
 
     // 2. Authenticate
-    // NOTE: Changed 'RequestToken' to 'GetSessionToken' (Standard V3 Endpoint)
-    const auth = await axios.post(`${baseUrl}/api/Auth/GetSessionToken`, {
+    // FIX: Changed back to 'RequestToken'. 
+    // Added 'headers' to ensure Pesapal doesn't return HTML 404.
+    const auth = await axios.post(`${baseUrl}/api/Auth/RequestToken`, {
       consumer_key: process.env.PESAPAL_CONSUMER_KEY,
       consumer_secret: process.env.PESAPAL_CONSUMER_SECRET,
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json" 
+      }
     });
 
     if (!auth.data.token) {
-        throw new Error("Auth Failed. Check Keys. Response: " + JSON.stringify(auth.data));
+        throw new Error("Auth Failed. Response: " + JSON.stringify(auth.data));
     }
     
     const token = auth.data.token;
+    console.log("Token Received");
 
     // 3. Register IPN
     const ipn = await axios.post(`${baseUrl}/api/URLSetup/RegisterIPN`, {
       url: ipnUrl, 
       ipn_notification_type: "GET"
-    }, { headers: { Authorization: `Bearer ${token}` } });
+    }, { 
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      } 
+    });
+
+    console.log("IPN ID:", ipn.data.ipn_id);
 
     // 4. Submit Order
     const order = await axios.post(`${baseUrl}/api/Transactions/SubmitOrderRequest`, {
@@ -65,7 +81,13 @@ exports.handler = async (event) => {
           first_name: name, 
           country_code: "KE" 
       }
-    }, { headers: { Authorization: `Bearer ${token}` } });
+    }, { 
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      } 
+    });
 
     if (!order.data.redirect_url) {
         throw new Error("No Redirect URL. Response: " + JSON.stringify(order.data));
