@@ -5,20 +5,13 @@ exports.handler = async (event) => {
 
   const { amount, email, phone, name, orderId } = JSON.parse(event.body);
   
-  // ---------------------------------------------------------
-  // 1. CONFIGURATION
-  // ---------------------------------------------------------
-  
-  // Check if we are in Live mode based on Env Variable
-  const isLive = process.env.PESAPAL_ENV === 'live';
-  
-  // CORRECT LIVE URLS FOR V3
-  const baseUrl = isLive 
-    ? 'https://pay.pesapal.com/v3' 
-    : 'https://cybqa.pesapal.com/pesapalv3';
+  // ------------------------------------------------------------------
+  // 🔴 FORCE LIVE URL
+  // We are not checking variables. We are using the Live URL directly.
+  // ------------------------------------------------------------------
+  const baseUrl = "https://pay.pesapal.com/v3"; 
 
-  // ---------------------------------------------------------
-
+  // Handle Redirect URL (Localhost vs Live)
   let origin = process.env.URL || "http://localhost:8888";
   if (origin.includes("localhost")) {
       origin = "http://localhost:3000";
@@ -26,16 +19,13 @@ exports.handler = async (event) => {
 
   // Handle IPN URL
   const ipnUrl = origin.includes("localhost") 
-    ? "https://www.google.com" // Dummy for localhost
+    ? "https://www.google.com" 
     : `${origin}/.netlify/functions/ipn`;
 
   try {
-    console.log(`--- MODE: ${isLive ? 'LIVE' : 'SANDBOX'} ---`);
-    console.log(`--- URL: ${baseUrl} ---`);
+    console.log(`--- CONNECTING TO LIVE SERVER: ${baseUrl} ---`);
 
-    // 2. Authenticate
-    // FIX: Changed back to 'RequestToken'. 
-    // Added 'headers' to ensure Pesapal doesn't return HTML 404.
+    // 1. Authenticate (Live Endpoint)
     const auth = await axios.post(`${baseUrl}/api/Auth/RequestToken`, {
       consumer_key: process.env.PESAPAL_CONSUMER_KEY,
       consumer_secret: process.env.PESAPAL_CONSUMER_SECRET,
@@ -47,13 +37,13 @@ exports.handler = async (event) => {
     });
 
     if (!auth.data.token) {
-        throw new Error("Auth Failed. Response: " + JSON.stringify(auth.data));
+        throw new Error("Auth Failed. Check Keys. Response: " + JSON.stringify(auth.data));
     }
     
     const token = auth.data.token;
     console.log("Token Received");
 
-    // 3. Register IPN
+    // 2. Register IPN
     const ipn = await axios.post(`${baseUrl}/api/URLSetup/RegisterIPN`, {
       url: ipnUrl, 
       ipn_notification_type: "GET"
@@ -65,9 +55,7 @@ exports.handler = async (event) => {
       } 
     });
 
-    console.log("IPN ID:", ipn.data.ipn_id);
-
-    // 4. Submit Order
+    // 3. Submit Order
     const order = await axios.post(`${baseUrl}/api/Transactions/SubmitOrderRequest`, {
       id: orderId,
       currency: "KES",
@@ -111,6 +99,134 @@ exports.handler = async (event) => {
   }
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*const axios = require('axios');
+
+exports.handler = async (event) => {
+  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
+
+  const { amount, email, phone, name, orderId } = JSON.parse(event.body);
+  
+  // ---------------------------------------------------------
+  // 1. FORCED LIVE CONFIGURATION
+  // ---------------------------------------------------------
+  
+  // ⚠️ HARDCODED TO TRUE. This forces the Live URL.
+  const isLive = true; 
+  
+  const baseUrl = isLive 
+    ? 'https://pay.pesapal.com/v3' 
+    : 'https://cybqa.pesapal.com/pesapalv3';
+
+  // ---------------------------------------------------------
+
+  let origin = process.env.URL || "http://localhost:8888";
+  if (origin.includes("localhost")) {
+      origin = "http://localhost:3000";
+  }
+
+  // Handle IPN URL
+  const ipnUrl = origin.includes("localhost") 
+    ? "https://www.google.com" 
+    : `${origin}/.netlify/functions/ipn`;
+
+  try {
+    console.log(`--- MODE: ${isLive ? 'LIVE' : 'SANDBOX'} ---`);
+    console.log(`--- URL: ${baseUrl} ---`);
+
+    // 2. Authenticate
+    const auth = await axios.post(`${baseUrl}/api/Auth/RequestToken`, {
+      consumer_key: process.env.PESAPAL_CONSUMER_KEY,
+      consumer_secret: process.env.PESAPAL_CONSUMER_SECRET,
+    }, {
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json" 
+      }
+    });
+
+    if (!auth.data.token) {
+        throw new Error("Auth Failed. Response: " + JSON.stringify(auth.data));
+    }
+    
+    const token = auth.data.token;
+
+    // 3. Register IPN
+    const ipn = await axios.post(`${baseUrl}/api/URLSetup/RegisterIPN`, {
+      url: ipnUrl, 
+      ipn_notification_type: "GET"
+    }, { 
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      } 
+    });
+
+    // 4. Submit Order
+    const order = await axios.post(`${baseUrl}/api/Transactions/SubmitOrderRequest`, {
+      id: orderId,
+      currency: "KES",
+      amount: amount,
+      description: "Food Order",
+      callback_url: `${origin}/order/${orderId}`, 
+      notification_id: ipn.data.ipn_id,
+      billing_address: { 
+          email_address: email, 
+          phone_number: phone, 
+          first_name: name, 
+          country_code: "KE" 
+      }
+    }, { 
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      } 
+    });
+
+    if (!order.data.redirect_url) {
+        throw new Error("No Redirect URL. Response: " + JSON.stringify(order.data));
+    }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ redirect_url: order.data.redirect_url })
+    };
+
+  } catch (error) {
+    console.error("PAYMENT ERROR:", error.response ? error.response.data : error.message);
+    
+    return { 
+        statusCode: 500, 
+        body: JSON.stringify({ 
+            error: error.message, 
+            details: error.response ? error.response.data : "Check Netlify Logs" 
+        }) 
+    };
+  }
+};*/
 
 
 
