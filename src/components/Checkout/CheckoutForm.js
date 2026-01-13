@@ -7,6 +7,10 @@ const CheckoutForm = () => {
   const { items, total, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
 
+   // Define Delivery Fee here as well
+  const DELIVERY_FEE = 300;
+  const grandTotal = total + DELIVERY_FEE;
+
   // Added 'email' to state because Pesapal requires it
   const [formData, setFormData] = useState({
     customerName: '',
@@ -28,7 +32,10 @@ const CheckoutForm = () => {
       const orderData = {
         ...formData,
         items,
-        totalAmount: total,
+         subtotal: total,           // Save subtotal for records
+        deliveryFee: DELIVERY_FEE, // Save delivery fee for records
+        totalAmount: grandTotal,   // This is the amount the user PAYS
+       // totalAmount: total,
         status: 'pending', // Will become 'paid' after successful payment
         createdAt: serverTimestamp(),
         paymentMethod: 'Pesapal'
@@ -42,7 +49,7 @@ const CheckoutForm = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: total,
+          amount: grandTotal,
           // Map your form data to what pay.js expects:
           name: formData.customerName,
           email: formData.email, 
@@ -136,7 +143,7 @@ const CheckoutForm = () => {
         className={`w-full font-bold py-4 rounded-xl transition-colors disabled:opacity-50 
           ${loading ? 'bg-gray-300 text-gray-600' : 'bg-yellow-500 hover:bg-yellow-600 text-black'}`}
       >
-        {loading ? "Processing..." : `Pay Now • Ksh ${total}`}
+        {loading ? "Processing..." : `Pay Now • Ksh ${grandTotal}`}
       </button>
 
       <p className="text-center text-xs text-gray-400 mt-2">

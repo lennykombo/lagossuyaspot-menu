@@ -4,6 +4,10 @@ import { useCart } from '../../context/CartContext';
 const CartSummary = () => {
   const { items, total } = useCart();
 
+  // Define Delivery Fee
+  const DELIVERY_FEE = 300;
+  const grandTotal = total + DELIVERY_FEE;
+  
   return (
     <div className="space-y-4">
       <div className="max-h-60 overflow-y-auto space-y-3 pr-2">
@@ -34,11 +38,12 @@ const CartSummary = () => {
         </div>
         <div className="flex justify-between text-gray-600">
           <span>Delivery</span>
-          <span className="text-green-600 uppercase text-xs font-bold">We will call</span>
+          {/*<span className="text-green-600 uppercase text-xs font-bold">We will call</span>*/}
+          <span className="font-medium">Ksh {DELIVERY_FEE}</span>
         </div>
         <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
           <span>Total</span>
-          <span>Ksh {total}</span>
+          <span>Ksh {grandTotal}</span>
         </div>
       </div>
     </div>
@@ -46,21 +51,3 @@ const CartSummary = () => {
 };
 
 export default CartSummary;
-
-
-
-
-
-
-
-
-
-/*import React from 'react'
-
-const CartSummary = () => {
-  return (
-    <div>CartSummary</div>
-  )
-}
-
-export default CartSummary*/
