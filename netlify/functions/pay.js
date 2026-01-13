@@ -5,6 +5,107 @@ exports.handler = async (event) => {
 
   const { amount, email, phone, name, orderId } = JSON.parse(event.body);
   
+  // ---------------------------------------------------------
+  // 1. CONFIGURATION
+  // ---------------------------------------------------------
+  
+  // CHECK: If PESAPAL_ENV is 'live', use live. Otherwise, default to Sandbox.
+  const isLive = process.env.PESAPAL_ENV === 'live';
+  
+  // LIVE URL vs SANDBOX URL
+  const baseUrl = isLive 
+    ? 'https://pay.pesapal.com/v3' 
+    : 'https://cybqa.pesapal.com/pesapalv3';
+
+  // ---------------------------------------------------------
+
+  let origin = process.env.URL || "http://localhost:8888";
+  if (origin.includes("localhost")) {
+      origin = "http://localhost:3000";
+  }
+
+  // Handle IPN URL
+  const ipnUrl = origin.includes("localhost") 
+    ? "https://www.google.com" // Dummy for localhost
+    : `${origin}/.netlify/functions/ipn`;
+
+  try {
+    console.log(`--- MODE: ${isLive ? 'LIVE (Real Money)' : 'SANDBOX (Testing)'} ---`);
+
+    // 2. Authenticate
+    // NOTE: Changed 'RequestToken' to 'GetSessionToken' (Standard V3 Endpoint)
+    const auth = await axios.post(`${baseUrl}/api/Auth/GetSessionToken`, {
+      consumer_key: process.env.PESAPAL_CONSUMER_KEY,
+      consumer_secret: process.env.PESAPAL_CONSUMER_SECRET,
+    });
+
+    if (!auth.data.token) {
+        throw new Error("Auth Failed. Check Keys. Response: " + JSON.stringify(auth.data));
+    }
+    
+    const token = auth.data.token;
+
+    // 3. Register IPN
+    const ipn = await axios.post(`${baseUrl}/api/URLSetup/RegisterIPN`, {
+      url: ipnUrl, 
+      ipn_notification_type: "GET"
+    }, { headers: { Authorization: `Bearer ${token}` } });
+
+    // 4. Submit Order
+    const order = await axios.post(`${baseUrl}/api/Transactions/SubmitOrderRequest`, {
+      id: orderId,
+      currency: "KES",
+      amount: amount,
+      description: "Food Order",
+      callback_url: `${origin}/order/${orderId}`, 
+      notification_id: ipn.data.ipn_id,
+      billing_address: { 
+          email_address: email, 
+          phone_number: phone, 
+          first_name: name, 
+          country_code: "KE" 
+      }
+    }, { headers: { Authorization: `Bearer ${token}` } });
+
+    if (!order.data.redirect_url) {
+        throw new Error("No Redirect URL. Response: " + JSON.stringify(order.data));
+    }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ redirect_url: order.data.redirect_url })
+    };
+
+  } catch (error) {
+    console.error("PAYMENT ERROR:", error.response ? error.response.data : error.message);
+    
+    return { 
+        statusCode: 500, 
+        body: JSON.stringify({ 
+            error: error.message, 
+            details: error.response ? error.response.data : "Check Netlify Logs" 
+        }) 
+    };
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+/*const axios = require('axios');
+
+exports.handler = async (event) => {
+  if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
+
+  const { amount, email, phone, name, orderId } = JSON.parse(event.body);
+  
   // 1. Determine Environment
   const isLive = process.env.PESAPAL_ENV === 'live';
   const baseUrl = isLive 
@@ -102,7 +203,7 @@ exports.handler = async (event) => {
         }) 
     };
   }
-};
+};*/
 
 
 
