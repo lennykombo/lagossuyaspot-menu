@@ -6,8 +6,11 @@ import {
   X, 
   LayoutDashboard, 
   UtensilsCrossed, 
-  ShoppingBag, 
-  LogOut // Added LogOut icon
+  ShoppingBag,
+  Map,
+  Users,
+  Receipt,
+  LogOut 
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -19,6 +22,9 @@ const AdminLayout = () => {
     { to: "/admin", label: "Dashboard", icon: <LayoutDashboard size={20} /> },
     { to: "/admin/menu", label: "Menu Items", icon: <UtensilsCrossed size={20} /> },
     { to: "/admin/orders", label: "Orders", icon: <ShoppingBag size={20} /> },
+    { to: "/admin/tables", label: "Floor Plan", icon: <Map size={20} /> },
+    { to: "/admin/staff", label: "Staff", icon: <Users size={20} /> },
+    { to: "/admin/receipts", label: "Sales & Receipts", icon: <Receipt size={20} /> },
   ];
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);

@@ -1,3 +1,90 @@
+/*const axios = require('axios');
+
+exports.handler = async (event) => {
+  const { trackingId } = event.queryStringParameters;
+
+  // --- DEBUGGING ---
+  console.log("--- VERIFY STARTED ---");
+  console.log("Tracking ID:", trackingId);
+  console.log("Env Mode:", process.env.PESAPAL_ENV);
+  // -----------------
+
+  if (!trackingId) {
+    return { statusCode: 400, body: JSON.stringify({ error: "Missing Tracking ID" }) };
+  }
+
+  // 1. Determine Environment (Sandbox vs Live)
+  const isProduction = process.env.PESAPAL_ENV === 'live';
+  const baseUrl = isProduction 
+    ? "https://pay.pesapal.com/v3" 
+    : "https://cybqa.pesapal.com/pesapalv3";
+
+  try {
+    // 2. Authenticate (Get Token)
+    console.log(`Authenticating with ${baseUrl}...`);
+    
+    const auth = await axios.post(`${baseUrl}/api/Auth/RequestToken`, {
+      consumer_key: process.env.PESAPAL_CONSUMER_KEY,
+      consumer_secret: process.env.PESAPAL_CONSUMER_SECRET,
+    }, {
+      headers: { "Content-Type": "application/json", "Accept": "application/json" }
+    });
+
+    if (!auth.data.token) {
+        throw new Error("Auth Failed. Check Keys.");
+    }
+    const token = auth.data.token;
+
+    // 3. Get Transaction Status from Pesapal
+    console.log("Checking Status...");
+    const statusReq = await axios.get(
+      `${baseUrl}/api/Transactions/GetTransactionStatus?orderTrackingId=${trackingId}`,
+      {
+        headers: { 
+            Authorization: `Bearer ${token}`,
+            "Accept": "application/json" 
+        }
+      }
+    );
+
+    const paymentDetails = statusReq.data;
+    console.log("Pesapal Response:", paymentDetails.payment_status_description);
+
+    // 4. Return Data to Frontend
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        status: paymentDetails.payment_status_description, // e.g., "Completed", "Failed"
+        amount: paymentDetails.amount,
+        currency: paymentDetails.currency,
+        confirmation_code: paymentDetails.confirmation_code, // Mpesa Code
+        raw: paymentDetails
+      })
+    };
+
+  } catch (error) {
+    console.error("VERIFY ERROR:", error.response ? error.response.data : error.message);
+    
+    return {
+      statusCode: 500,
+      body: JSON.stringify({
+        error: "Verification Failed",
+        details: error.message
+      })
+    };
+  }
+};*/
+
+
+
+
+
+
+
+
+
+
+
 const axios = require('axios');
 
 exports.handler = async (event) => {

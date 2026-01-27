@@ -33,7 +33,7 @@ const OrderStatusPage = () => {
 
 
   // --- 2. PAYMENT LOGIC: Handle Pesapal Redirect ---
-  useEffect(() => {
+  /*useEffect(() => {
     const verifyPayment = async () => {
       // Get the ID Pesapal put in the URL
       const trackingId = searchParams.get('OrderTrackingId');
@@ -71,7 +71,57 @@ const OrderStatusPage = () => {
     };
 
     verifyPayment();
-  }, [searchParams, orderId, paymentStatus, setSearchParams]);
+  }, [searchParams, orderId, paymentStatus, setSearchParams]);*/
+
+  // --- 2. PAYMENT LOGIC: Handle Pesapal Redirect ---
+  useEffect(() => {
+    const verifyPayment = async () => {
+      // Get the ID Pesapal put in the URL
+      const trackingId = searchParams.get('OrderTrackingId');
+
+      // Only run if we have a tracking ID and haven't verified it yet
+      // Also prevent re-running if we already succeeded
+      if (trackingId && paymentStatus !== "success") {
+        setPaymentStatus("verifying");
+
+        try {
+          console.log("Verifying Tracking ID:", trackingId);
+          
+          // Call your Netlify Backend
+          const res = await fetch(`/.netlify/functions/verify?trackingId=${trackingId}`);
+          const data = await res.json();
+
+          console.log("Pesapal Verification Response:", data);
+
+          // FIX: Check for "Completed" or "success" (Case Insensitive)
+          const status = data.status?.toLowerCase();
+
+          if (status === "completed" || status === "success") {
+            // ✅ CRITICAL STEP: Update Firebase to 'paid'
+            await updateDoc(doc(db, "orders", orderId), {
+              status: 'paid',
+              pesapalTrackingId: trackingId,
+              paymentMethod: 'Pesapal',
+              paidAt: new Date() // Useful for sorting
+            });
+            
+            setPaymentStatus("success");
+            
+            // Optional: Remove query params to prevent re-verification on refresh
+            setSearchParams({});
+          } else {
+            setPaymentStatus("failed");
+            console.error("Payment failed. Status:", data.status);
+          }
+        } catch (err) {
+          console.error("Verification Error:", err);
+          setPaymentStatus("failed");
+        }
+      }
+    };
+
+    verifyPayment();
+  }, [searchParams, orderId, setSearchParams]); // Removed paymentStatus from dependency to avoid loop issues
 
 
   // Helper for time formatting
