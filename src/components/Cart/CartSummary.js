@@ -5,7 +5,7 @@ const CartSummary = () => {
   const { items, total } = useCart();
 
   // Define Delivery Fee
-  const DELIVERY_FEE = 20;
+  const DELIVERY_FEE = 300;
   const grandTotal = total + DELIVERY_FEE;
   
   return (

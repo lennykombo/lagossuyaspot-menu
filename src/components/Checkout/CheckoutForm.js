@@ -8,7 +8,7 @@ const CheckoutForm = () => {
   const [loading, setLoading] = useState(false);
 
    // Define Delivery Fee here as well
-  const DELIVERY_FEE = 20;
+  const DELIVERY_FEE = 300;
   const grandTotal = total + DELIVERY_FEE;
 
   // Added 'email' to state because Pesapal requires it
