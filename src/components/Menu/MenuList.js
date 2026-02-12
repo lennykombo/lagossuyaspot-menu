@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "../../components/firebase";
 import LogoLoader from "../common/LogoLoader";
 import ItemModal from "./ItemModal";
@@ -23,8 +23,11 @@ const MenuList = ({ onLoaded, setActiveCategory }) => {
     hasLoaded.current = true;
 
     const fetchMenuData = async () => {
-      const catSnap = await getDocs(query(collection(db, "categories"), where("active", "==", true)));
-      const cats = catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const catSnap = await getDocs(query(collection(db, "categories"), where("active", "==", true), orderBy("order", "asc")));
+      //const cats = catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const cats = catSnap.docs
+  .map(doc => ({ id: doc.id, ...doc.data() }))
+  .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
 
       const itemSnap = await getDocs(query(collection(db, "menuItems"), where("available", "==", true)));
       const items = itemSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -93,6 +96,7 @@ const MenuList = ({ onLoaded, setActiveCategory }) => {
       return () => ctx.revert();
     }
   }, [loading, menuItems]);
+  
 
   if (loading) return <LogoLoader />;
 

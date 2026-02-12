@@ -1,5 +1,16 @@
 import { useState, useEffect } from "react";
-import { addDoc, collection, updateDoc, doc } from "firebase/firestore";
+//import { addDoc, collection, updateDoc, doc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  updateDoc,
+  doc,
+  getDocs,
+  query,
+  orderBy,
+  limit
+} from "firebase/firestore";
+
 import { db } from "../../components/firebase";
 import BaseModal from "./BaseModal";
 
@@ -74,12 +85,34 @@ const save = async () => {
           name,
         });
       } else {
-        // ➕ Add
+        /* ➕ Add
         await addDoc(collection(db, "categories"), {
           name,
           active: true,
           createdAt: new Date(),
-        });
+           order,
+        });*/
+        // ➕ Add NEW category
+
+      // 1️⃣ Find highest order
+      const q = query(
+        collection(db, "categories"),
+        orderBy("order", "desc"),
+        limit(1)
+      );
+
+      const snap = await getDocs(q);
+
+      // 2️⃣ Calculate next order safely
+      const order = snap.empty ? 0 : snap.docs[0].data().order + 1;
+
+      // 3️⃣ Save category
+      await addDoc(collection(db, "categories"), {
+        name,
+        active: true,
+        createdAt: new Date(),
+        order,
+      });
       }
 
       onClose();

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
+//import { collection, getDocs, updateDoc, doc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, updateDoc, doc, deleteDoc, writeBatch, query, orderBy } from "firebase/firestore";
 import { db } from "../../components/firebase";
-
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import CategoryModal from "../admin/CategoryModal";
 import SpiceLevelModal from "../admin/SpiceLevelModal";
 import ExtraModal from "../admin/ExtraModal";
@@ -25,11 +26,25 @@ export default function MenuManager() {
   useEffect(() => {
     const fetchData = async () => {
       // Fetch Categories (Only Active)
-      const catsSnap = await getDocs(collection(db, "categories"));
+      /*const catsSnap = await getDocs(collection(db, "categories"), orderBy("order", "asc"));
       setCategories(catsSnap.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .filter(c => c.active !== false)
-      );
+      );*/
+
+      const q = query(
+  collection(db, "categories"),
+  orderBy("order", "asc")
+);
+
+const catsSnap = await getDocs(q);
+
+setCategories(
+  catsSnap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(c => c.active !== false)
+);
+
 
       // Fetch ALL Menu Items (Even hidden ones, so Admin can manage them)
       const itemsSnap = await getDocs(collection(db, "menuItems"));
@@ -45,6 +60,32 @@ export default function MenuManager() {
 
     fetchData();
   }, [categoryOpen, spiceOpen, extraOpen, itemOpen]);
+
+
+  // --- 4. ADDED: DRAG END HANDLER ---
+  const handleDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    // A. Reorder locally
+    const items = Array.from(categories);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setCategories(items);
+
+    // B. Batch update Firebase
+    try {
+      const batch = writeBatch(db);
+      items.forEach((cat, index) => {
+        const docRef = doc(db, "categories", cat.id);
+        batch.update(docRef, { order: index });
+      });
+      await batch.commit();
+      console.log("Category order updated");
+    } catch (error) {
+      console.error("Error updating order:", error);
+    }
+  };
 
 
   // --- ACTIONS ---
@@ -106,7 +147,7 @@ export default function MenuManager() {
 
       {/* Data Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <DataCard
+        {/*<DataCard
           title="Categories"
           items={categories}
           render={(c) => (
@@ -118,19 +159,34 @@ export default function MenuManager() {
               </div>
             </div>
           )}
-        />
+        />*/}
 
         <DataCard title="Spice Levels" items={spiceLevels} render={(s) => s.label} />
         <DataCard title="Extras" items={extras} render={(e) => `${e.label} (+${e.price})`} />
       </div>
 
       {/* Main Menu Items List (Drawer) */}
-      <CategoryDrawer
+      {/*<CategoryDrawer
         categories={categories}
         menuItems={menuItems} // Passing ALL items (hidden and visible)
         onEdit={(item) => { setEditingItem(item); setItemOpen(true); }}
         onDelete={deleteMenuItem}
         onToggleStatus={toggleAvailability} // Pass the toggle function
+      />*/}
+       {/* 
+         5. UPDATED: Main Menu Items List (Drawer) 
+         Now handles the Drag Logic
+      */}
+      <DraggableCategoryDrawer
+        categories={categories}
+        menuItems={menuItems}
+        onDragEnd={handleDragEnd} // Pass the handler
+        onEdit={(item) => { setEditingItem(item); setItemOpen(true); }}
+        onDelete={deleteMenuItem}
+        onToggleStatus={toggleAvailability}
+        // Pass category actions specifically so we can call them from the drawer
+        onEditCategory={(cat) => { setEditingCategory(cat); setCategoryOpen(true); }}
+        onDeleteCategory={deleteCategory}
       />
 
       {/* Modals */}
@@ -186,83 +242,112 @@ function DataCard({ title, items, render }) {
   );
 }
 
-function CategoryDrawer({ categories, menuItems, onEdit, onDelete, onToggleStatus }) {
+function DraggableCategoryDrawer({ categories, menuItems, onDragEnd, onEdit, onDelete, onToggleStatus, onEditCategory, onDeleteCategory }) {
   const [openId, setOpenId] = useState(null);
 
   return (
-    <div className="border rounded-lg bg-white shadow-sm mt-6 mb-20">
-      <h3 className="font-semibold p-4 border-b bg-gray-50">Menu Items</h3>
+    <div className="border rounded-lg bg-white shadow-sm mb-20">
+      <h3 className="font-semibold p-4 border-b bg-gray-50 flex justify-between items-center">
+        <span>Menu Categories & Items</span>
+        <span className="text-xs text-gray-400 font-normal">Drag ☰ to reorder categories</span>
+      </h3>
 
-      {categories.map(cat => {
-        const items = menuItems.filter(item => item.categoryId === cat.id);
-        const isOpen = openId === cat.id;
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="category-list">
+          {(provided) => (
+            <div {...provided.droppableProps} ref={provided.innerRef}>
+              
+              {categories.map((cat, index) => {
+                const items = menuItems.filter(item => item.categoryId === cat.id);
+                const isOpen = openId === cat.id;
 
-        return (
-          <div key={cat.id} className="border-b last:border-none">
-            <button
-              onClick={() => setOpenId(isOpen ? null : cat.id)}
-              className="w-full flex justify-between items-center p-4 hover:bg-gray-50 transition"
-            >
-              <span className="font-medium text-lg">{cat.name}</span>
-              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                {items.length} items
-              </span>
-            </button>
-
-            {isOpen && (
-              <div className="bg-gray-50 px-4 pb-3 space-y-2">
-                {items.length === 0 && (
-                  <p className="text-sm text-gray-400 italic p-2">No menu items in this category</p>
-                )}
-
-                {items.map(item => (
-                  <div key={item.id} className={`flex flex-col md:flex-row justify-between items-center bg-white p-3 rounded border shadow-sm ${!item.available ? "opacity-75 bg-gray-50" : ""}`}>
-                    
-                    {/* Item Info */}
-                    <div className="flex items-center gap-3 w-full md:w-auto mb-2 md:mb-0">
-                      {item.imageUrl && (
-                        <img src={item.imageUrl} alt="" className="w-10 h-10 rounded object-cover bg-gray-200" />
-                      )}
-                      <div>
-                        <p className={`font-bold ${!item.available ? "text-gray-500 line-through" : "text-gray-800"}`}>
-                          {item.name}
-                        </p>
-                        <p className="text-gray-500 text-sm">KSh {item.price}</p>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto justify-end">
-                      
-                      {/* TOGGLE VISIBILITY BUTTON */}
-                      <button
-                        onClick={() => onToggleStatus(item)}
-                        className={`px-3 py-1 text-xs font-bold uppercase rounded border transition-colors ${
-                          item.available 
-                            ? "bg-green-100 text-green-700 border-green-300 hover:bg-green-200" 
-                            : "bg-gray-200 text-gray-600 border-gray-300 hover:bg-gray-300"
-                        }`}
+                return (
+                  // DRAGGABLE wraps the WHOLE accordion section
+                  <Draggable key={cat.id} draggableId={cat.id} index={index}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        className={`border-b last:border-none bg-white ${snapshot.isDragging ? "shadow-xl z-50 ring-2 ring-yellow-400 relative rounded-md" : ""}`}
+                        style={provided.draggableProps.style}
                       >
-                        {item.available ? "Visible" : "Hidden"}
-                      </button>
+                        <div className="flex items-center w-full hover:bg-gray-50 group">
+                          
+                          {/* DRAG HANDLE ICON */}
+                          <div 
+                            {...provided.dragHandleProps} 
+                            className="p-4 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-700"
+                            title="Drag to reorder"
+                          >
+                            ☰
+                          </div>
 
-                      <div className="w-px h-6 bg-gray-300 mx-1 hidden md:block"></div>
+                          {/* CLICK TO EXPAND */}
+                          <button
+                            onClick={() => setOpenId(isOpen ? null : cat.id)}
+                            className="flex-1 flex justify-between items-center py-4 pr-4 text-left"
+                          >
+                            <div>
+                              <span className="font-medium text-lg">{cat.name}</span>
+                              <span className="ml-3 text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                                {items.length} items
+                              </span>
+                            </div>
+                            
+                            {/* Category Actions */}
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                                <span onClick={() => onEditCategory(cat)} className="text-xs text-blue-600 hover:underline cursor-pointer">Edit Cat</span>
+                                <span className="text-gray-300">|</span>
+                                <span onClick={() => onDeleteCategory(cat)} className="text-xs text-red-600 hover:underline cursor-pointer">Delete</span>
+                            </div>
+                          </button>
+                        </div>
 
-                      <button onClick={() => onEdit(item)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                        Edit
-                      </button>
+                        {/* ITEMS LIST (Moves with the category) */}
+                        {isOpen && (
+                          <div className="bg-gray-50 px-4 pb-3 space-y-2 border-t border-gray-100">
+                            {items.length === 0 && (
+                              <p className="text-sm text-gray-400 italic p-2">No menu items in this category</p>
+                            )}
 
-                      <button onClick={() => onDelete(item)} className="text-red-500 hover:text-red-700 text-sm font-medium">
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+                            {items.map(item => (
+                              <div key={item.id} className={`flex flex-col md:flex-row justify-between items-center bg-white p-3 rounded border shadow-sm ${!item.available ? "opacity-75 bg-gray-50" : ""}`}>
+                                {/* Item Info */}
+                                <div className="flex items-center gap-3 w-full md:w-auto mb-2 md:mb-0">
+                                  {item.imageUrl && (
+                                    <img src={item.imageUrl} alt="" className="w-10 h-10 rounded object-cover bg-gray-200" />
+                                  )}
+                                  <div>
+                                    <p className={`font-bold ${!item.available ? "text-gray-500 line-through" : "text-gray-800"}`}>
+                                      {item.name}
+                                    </p>
+                                    <p className="text-gray-500 text-sm">KSh {item.price}</p>
+                                  </div>
+                                </div>
+
+                                {/* Item Actions */}
+                                <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto justify-end">
+                                  <button onClick={() => onToggleStatus(item)} className={`px-3 py-1 text-xs font-bold uppercase rounded border transition-colors ${item.available ? "bg-green-100 text-green-700 border-green-300" : "bg-gray-200 text-gray-600 border-gray-300"}`}>
+                                    {item.available ? "Visible" : "Hidden"}
+                                  </button>
+                                  <div className="w-px h-6 bg-gray-300 mx-1 hidden md:block"></div>
+                                  <button onClick={() => onEdit(item)} className="text-blue-600 hover:text-blue-800 text-sm font-medium">Edit</button>
+                                  <button onClick={() => onDelete(item)} className="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </Draggable>
+                );
+              })}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
     </div>
   );
 }
@@ -612,40 +697,3 @@ function CategoryDrawer({ categories, menuItems, onEdit, onDelete }) {
   );
 }*/
 
-
-
-
-
-
-
-
-/*import { useState } from "react";
-import CategoryModal from "../admin/CategoryModal";
-import SpiceLevelModal from "../admin/SpiceLevelModal";
-import ExtraModal from "../admin/ExtraModal";
-import MenuItemModal from "../admin/MenuItemModal";
-
-export default function MenuManager() {
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const [spiceOpen, setSpiceOpen] = useState(false);
-  const [extraOpen, setExtraOpen] = useState(false);
-  const [itemOpen, setItemOpen] = useState(false);
-
-  return (
-    <div>
-      <h1 className="text-xl font-semibold mb-6">Menu Manager</h1>
-
-      <div className="flex gap-3 mb-6">
-        <button onClick={() => setCategoryOpen(true)}>Add Category</button>
-        <button onClick={() => setSpiceOpen(true)}>Add Spice</button>
-        <button onClick={() => setExtraOpen(true)}>Add Extra</button>
-        <button onClick={() => setItemOpen(true)}>Add Item</button>
-      </div>
-
-      <CategoryModal open={categoryOpen} onClose={() => setCategoryOpen(false)} />
-      <SpiceLevelModal open={spiceOpen} onClose={() => setSpiceOpen(false)} />
-      <ExtraModal open={extraOpen} onClose={() => setExtraOpen(false)} />
-      <MenuItemModal open={itemOpen} onClose={() => setItemOpen(false)} />
-    </div>
-  );
-}*/

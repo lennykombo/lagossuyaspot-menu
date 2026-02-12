@@ -36,7 +36,7 @@ export default function CategoryTabs({ activeId, onChange }) {
 
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 import { db } from "../firebase"; // Check your path
 
 export default function CategoryTabs({ activeId, onChange }) {
@@ -45,8 +45,12 @@ export default function CategoryTabs({ activeId, onChange }) {
   useEffect(() => {
     const fetchCategories = async () => {
       // Assuming you want "All" + active categories
-      const snap = await getDocs(query(collection(db, "categories"), where("active", "==", true)));
-      const cats = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const snap = await getDocs(query(collection(db, "categories"), where("active", "==", true), orderBy("order", "asc")));
+      //const cats = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const cats = snap.docs
+  .map(doc => ({ id: doc.id, ...doc.data() }))
+  .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+
       setCategories([{ id: "all", name: "All" }, ...cats]);
     };
     fetchCategories();
