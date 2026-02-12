@@ -169,14 +169,14 @@ const MenuPage = () => {
   };
 
 
-  const scrollToTop = () => {
+  /*const scrollToTop = () => {
   if (containerRef.current) {
     containerRef.current.scrollTo({
       top: 0,         // scroll container to top
       behavior: "smooth"
     });
   }
-};
+};*/
 
 
   return (
@@ -196,21 +196,21 @@ const MenuPage = () => {
         <MenuList 
           setActiveCategory={handleScrollSpy}
           onLoaded={() => console.log("Menu Loaded")}
-          onModalOpenChange={(isOpen) => setShowScrollTop(!isOpen)}
+          //onModalOpenChange={(isOpen) => setShowScrollTop(!isOpen)}
         />
       </div>
 
       <FloatingCartButton onClick={() => setCartOpen(true)} />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
 
-{showScrollTop && !anyModalOpen && (
+{/*showScrollTop && !anyModalOpen && (
        <button
   onClick={scrollToTop}
   className="fixed flex-col bottom-6 left-6 z-50 bg-yellow-500 text-white font-mono p-3 rounded-md shadow-lg hover:bg-yellow-600 transition"
 >
   <div>↑ </div><div>up</div>
 </button>
-)}
+)*/}
 
 
     </div>

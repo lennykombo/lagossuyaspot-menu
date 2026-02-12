@@ -5,7 +5,7 @@ import LogoLoader from "../common/LogoLoader";
 import ItemModal from "./ItemModal";
 import gsap from "gsap";
 
-const MenuList = ({ onLoaded, setActiveCategory, onModalOpenChange }) => {
+const MenuList = ({ onLoaded, setActiveCategory }) => {
   const [categories, setCategories] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,9 +17,9 @@ const MenuList = ({ onLoaded, setActiveCategory, onModalOpenChange }) => {
   const menuRef = useRef(null);
   const hasLoaded = useRef(false);
 
-   useEffect(() => {
+   /*useEffect(() => {
     if (onModalOpenChange) onModalOpenChange(!!selectedItem);
-  }, [selectedItem, onModalOpenChange]);
+  }, [selectedItem, onModalOpenChange]);*/
 
   // 1. FETCH DATA
   useEffect(() => {
@@ -207,8 +207,8 @@ const MenuList = ({ onLoaded, setActiveCategory, onModalOpenChange }) => {
         </div>
       )}
 
-      {/*<ItemModal item={selectedItem} open={!!selectedItem} onClose={() => setSelectedItem(null)} />*/}
-        <ItemModal 
+      <ItemModal item={selectedItem} open={!!selectedItem} onClose={() => setSelectedItem(null)} />
+        {/*<ItemModal 
   item={selectedItem} 
   open={!!selectedItem} 
   onClose={() => {
@@ -218,7 +218,7 @@ const MenuList = ({ onLoaded, setActiveCategory, onModalOpenChange }) => {
   onOpen={() => {
     if (onModalOpenChange) onModalOpenChange(true);
   }}
-/>
+/>*/}
 
     </div>
   );

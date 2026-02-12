@@ -10,7 +10,7 @@ export default function FloatingCartButton({ onClick }) {
     <button
       onClick={onClick}
       className="
-        fixed bottom-4 left-20 right-4 z-50
+        fixed bottom-4 left-4 right-4 z-50
         flex items-center justify-between
         bg-yellow-500 text-black
         px-5 py-3 rounded-full
