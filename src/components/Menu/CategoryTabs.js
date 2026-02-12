@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+/*import { useEffect, useState } from "react";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 
@@ -26,6 +26,67 @@ export default function CategoryTabs({ activeId, onChange }) {
           {cat.name}
         </button>
       ))}
+    </div>
+  );
+}
+*/
+
+
+
+
+
+import { useEffect, useState } from "react";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { db } from "../firebase"; // Check your path
+
+export default function CategoryTabs({ activeId, onChange }) {
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      // Assuming you want "All" + active categories
+      const snap = await getDocs(query(collection(db, "categories"), where("active", "==", true)));
+      const cats = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCategories([{ id: "all", name: "All" }, ...cats]);
+    };
+    fetchCategories();
+  }, []);
+
+  // --- THE FIX: Auto-scroll to active tab ---
+  useEffect(() => {
+    if (activeId) {
+      const activeTab = document.getElementById(`tab-${activeId}`);
+      if (activeTab) {
+        activeTab.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+          inline: "center" // This centers the button horizontally
+        });
+      }
+    }
+  }, [activeId]);
+  // ------------------------------------------
+
+  return (
+    // Added z-40 to ensure it sits above menu items
+    <div className="sticky top-0 z-40 bg-yellow-50/95 backdrop-blur-md border-b border-yellow-100">
+      <div className="flex gap-2 overflow-x-auto py-3 px-4 no-scrollbar scroll-smooth">
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            id={`tab-${cat.id}`} // WE NEED THIS ID FOR THE SCROLL LOGIC
+            onClick={() => onChange(cat)}
+            className={`
+              px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all duration-300 shadow-sm
+              ${activeId === cat.id 
+                ? "bg-yellow-500 text-white scale-105 shadow-md" 
+                : "bg-white text-gray-600 border border-gray-100 hover:bg-gray-50"}
+            `}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
