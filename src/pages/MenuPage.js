@@ -61,7 +61,7 @@ export default MenuPage;*/
 
 
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import MenuList from "../components/Menu/MenuList";
 import CategoryTabs from "../components/Menu/CategoryTabs";
 import CartDrawer from "../components/Cart/CartDrawer";
@@ -70,13 +70,18 @@ import FloatingCartButton from "../components/Cart/FloatingCartButton";
 const MenuPage = () => {
   const [activeCategoryId, setActiveCategoryId] = useState("all");
   const [cartOpen, setCartOpen] = useState(false);
-  
+  const [scrollToCategoryId, setScrollToCategoryId] = useState(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [anyModalOpen, setAnyModalOpen] = useState(false);
+
   // We use this ref to prevent the scroll-spy from overriding the user's click
   // while the page is still scrolling to the target.
+
+  const containerRef = useRef(null);
   const isManualScroll = useRef(false);
 
   // 1. Handle Click on Tab
-  const handleTabChange = (category) => {
+ /* const handleTabChange = (category) => {
     // Determine target ID
     const targetId = category.id === "all" ? "menu-top" : category.id; // Assuming top of menu has an ID or just handle 'all' logic
     
@@ -101,38 +106,113 @@ const MenuPage = () => {
         isManualScroll.current = false;
       }, 800);
     }
+  };*/
+
+   // Scroll listener for Scroll-to-Top button
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 300) setShowScrollTop(true);
+      else setShowScrollTop(false);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+   const handleTabChange = (category) => {
+    setActiveCategoryId(category.id);
+    isManualScroll.current = true;
+    setScrollToCategoryId(category.id); // trigger useEffect scroll
   };
 
+   useEffect(() => {
+    if (!scrollToCategoryId || !containerRef.current) return;
+
+    const container = containerRef.current;
+    //const element = container.querySelector(`#${scrollToCategoryId}`);
+    const element = document.getElementById(scrollToCategoryId);
+    if (!element) return;
+
+    // Detect sticky WordPress header dynamically
+    const stickyHeader = document.querySelector(".sticky"); // change if your WP header uses another class
+    const headerHeight = stickyHeader ? stickyHeader.offsetHeight : 0;
+
+    const containerTop = container.getBoundingClientRect().top;
+    const elementTop = element.getBoundingClientRect().top;
+
+    const scrollPosition = container.scrollTop + (elementTop - containerTop - headerHeight);
+
+    container.scrollTo({
+      top: scrollPosition,
+      behavior: "smooth",
+    });
+
+    // Re-enable scroll spy after animation
+    setTimeout(() => {
+      isManualScroll.current = false;
+    }, 800);
+
+    setScrollToCategoryId(null);
+  }, [scrollToCategoryId]);
+
+
   // 2. Handle Scroll Spy (Called from MenuList)
-  const handleScrollSpy = (id) => {
+  /*const handleScrollSpy = (id) => {
     if (!isManualScroll.current) {
       setActiveCategoryId(id);
     }
+  };*/
+
+   // 3️⃣ Handle Scroll Spy
+  const handleScrollSpy = (id) => {
+    if (!isManualScroll.current) setActiveCategoryId(id);
   };
 
+
+  const scrollToTop = () => {
+  if (containerRef.current) {
+    containerRef.current.scrollTo({
+      top: 0,         // scroll container to top
+      behavior: "smooth"
+    });
+  }
+};
+
+
   return (
-    <div className="bg-white min-h-screen">
-      {/* 
-         REMOVED max-w-4xl px-4 py-4 wrapping the whole thing.
-         This allows CategoryTabs to be full width (sticky).
-         The centering is handled inside MenuList now.
-      */}
+     <div 
+      ref={containerRef} 
+      className="bg-white min-h-screen overflow-y-auto relative"
+      style={{ scrollBehavior: "smooth", maxHeight: "100vh" }}
+    >
       
       <div className="w-full">
         <CategoryTabs 
           activeId={activeCategoryId} 
-          onChange={handleTabChange} 
+          onChange={handleTabChange}  
         />
         
         {/* Pass the setter down to MenuList */}
         <MenuList 
           setActiveCategory={handleScrollSpy}
           onLoaded={() => console.log("Menu Loaded")}
+          onModalOpenChange={(isOpen) => setShowScrollTop(!isOpen)}
         />
       </div>
 
       <FloatingCartButton onClick={() => setCartOpen(true)} />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)} />
+
+{showScrollTop && !anyModalOpen && (
+       <button
+  onClick={scrollToTop}
+  className="fixed flex-col bottom-6 left-6 z-50 bg-yellow-500 text-white font-mono p-3 rounded-md shadow-lg hover:bg-yellow-600 transition"
+>
+  <div>↑ </div><div>up</div>
+</button>
+)}
+
+
     </div>
   );
 };
