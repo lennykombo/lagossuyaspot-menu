@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { collection, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../../components/firebase';
-import { Receipt, Calendar, User, Eye, Phone, Utensils, ShoppingBag, CheckCircle, Clock } from 'lucide-react';
+import { Receipt, Calendar, User, Eye, Phone, Utensils, ShoppingBag, CheckCircle, Clock, Truck } from 'lucide-react';
 
 const ReceiptsManager = () => {
   // --- RAW DATA ---
@@ -229,12 +229,27 @@ const ReceiptsManager = () => {
                 ))}
               </div>
 
-              <div className="border-t border-gray-800 pt-4 flex justify-between items-end">
+              {/*<div className="border-t border-gray-800 pt-4 flex justify-between items-end">
                 <span className="text-sm font-bold text-gray-600">Total {selectedItem.isPaid ? 'Paid' : 'Due'}</span>
                 <span className={`text-2xl font-black ${!selectedItem.isPaid ? 'text-red-600' : 'text-gray-900'}`}>
                     Ksh {Number(selectedItem.totalAmount).toLocaleString()}
                 </span>
-              </div>
+              </div>*/}
+              {/* This is the part that handles the split in the footer */}
+<div className="space-y-1 border-t border-gray-200 pt-4 mb-2">
+   <div className="flex justify-between text-sm text-gray-500">
+      <span>Subtotal (Food)</span>
+      <span>Ksh {(Number(selectedItem.totalAmount) - Number(selectedItem.deliveryFee || 0)).toLocaleString()}</span>
+   </div>
+   
+   {/* Only show this line if there is a delivery fee */}
+   {Number(selectedItem.deliveryFee) > 0 && (
+      <div className="flex justify-between text-sm text-orange-600 font-bold">
+          <span className="flex items-center gap-1"><Truck size={14}/> Delivery Fee</span>
+          <span>Ksh {Number(selectedItem.deliveryFee).toLocaleString()}</span>
+      </div>
+   )}
+</div>
             </>
           ) : (
              <div className="flex flex-col items-center justify-center h-full text-gray-400">
