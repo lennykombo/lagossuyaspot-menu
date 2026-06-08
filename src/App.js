@@ -36,16 +36,45 @@ function App() {
             <Route path="/waiter/tables" element={<FloorPlan />} />
             <Route path="/waiter/pos/:tableId/:tableName" element={<POS />} />
 
+             {/* This is accessible at /orders-display without the admin sidebar */}
+            {/*<Route 
+              path="/orders-display" 
+              element={
+                <ProtectedRoute>
+                  <OrdersManager /> 
+                </ProtectedRoute>
+              } 
+            />*/}
+            
+            <Route 
+              path="/orders-display" 
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'kitchen']}>
+                  <OrdersManager isKitchenView={true} /> 
+                </ProtectedRoute>
+              } 
+            />
+
 
             {/* PROTECTED Admin Routes */}
-            <Route 
+            {/*<Route 
               path="/admin" 
               element={
                 <ProtectedRoute>
                   <AdminLayout />
                 </ProtectedRoute>
               }
+            >*/}
+
+            <Route 
+              path="/admin" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
             >
+              
               <Route index element={<Dashboard />} />
               <Route path="menu" element={<MenuManager />} />
               <Route path="orders" element={<OrdersManager />} />
